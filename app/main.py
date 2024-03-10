@@ -31,3 +31,6 @@ if __name__ == "__main__":
         with open(database_file_path,"rb") as db_file:
             cursor = Sqlite(command,db_file)
             cursor.run(command)
+
+    else:
+        print(f"Invalid command: {command}")

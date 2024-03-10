@@ -37,8 +37,8 @@ class Sqlite:
 
         b_tree_header = self.parse_btree_header(page,True)
 
-        print(f"database page size:{self.page_size}")
-        print(f"number of tables:{b_tree_header.cell_count}")
+        print(f"database page size: {self.page_size}")
+        print(f"number of tables: {b_tree_header.cell_count}")
         
     def parse_btree_header(self,page,is_firstpage = False):
         offset = 100 if is_firstpage else 0
