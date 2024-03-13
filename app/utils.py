@@ -218,9 +218,14 @@ class Sqlite:
             #text
             elif column_serial_type >= 13 and column_serial_type % 2 == 1:
                 value_len = (column_serial_type - 13) // 2
-                column_values.append(buffer[offset : offset + value_len].decode(text_encoding))
-                offset += value_len
+                # column_values.append(buffer[offset : offset + value_len].decode(text_encoding))
+                text_value= buffer[offset : offset + value_len]
+                try:
+                    column_values.append(text_value.decode(text_encoding))
+                except UnicodeDecodeError:
+                    column_values.append(text_value)
 
+                offset += value_len
             else:
                 raise NotImplementedError(column_serial_type)
 
