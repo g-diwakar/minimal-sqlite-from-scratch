@@ -1,6 +1,6 @@
 import sys
 
-from dataclasses import dataclass
+# from dataclasses import dataclass
 
 from .utils import Sqlite
 
@@ -25,11 +25,11 @@ if __name__ == "__main__":
     database_file_path = sys.argv[1]
     command = sys.argv[2]
 
-    available_command = [".dbinfo"]
+    available_command = [".dbinfo",".tables"]
 
     if command in available_command:
         with open(database_file_path,"rb") as db_file:
-            cursor = Sqlite(command,db_file)
+            cursor = Sqlite(db_file)
             cursor.run(command)
 
     else:
