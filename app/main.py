@@ -23,14 +23,22 @@ from .utils import Sqlite
 
 if __name__ == "__main__":
     database_file_path = sys.argv[1]
-    command = sys.argv[2]
+    command = sys.argv[2].lower()
 
-    available_command = [".dbinfo",".tables"]
+    available_command = [".dbinfo",".tables","select"]
 
-    if command in available_command:
+    TABLE_NAME = None
+
+    if command.startswith("select"):
+        KEYWORDS_LIST = command.split(" ")
+        TABLE_NAME = KEYWORDS_LIST[KEYWORDS_LIST.index("from")+1]
+        command = "select"
+
+    if command in available_command :
         with open(database_file_path,"rb") as db_file:
-            cursor = Sqlite(db_file)
+            cursor = Sqlite(db_file,TABLE_NAME)
             cursor.run(command)
+            
 
     else:
         print(f"Invalid command: {command}")

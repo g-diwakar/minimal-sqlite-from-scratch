@@ -2,8 +2,9 @@ from collections import namedtuple
 import struct
 
 class Sqlite:
-    def __init__(self,db_file):
+    def __init__(self,db_file,table_name = None):
         self.db_file = db_file
+        self.table = table_name
 
         self.BTreeHeader = namedtuple("BTreeHeader",
                                       [
@@ -24,13 +25,23 @@ class Sqlite:
                                             "BTREE_LEAF_TABLE"
                                         ])
         
+        self.MasterTableColumn = namedtuple("MasterTableColumn",
+                                      [
+                                        "rowid",
+                                        "type",
+                                        "name",
+                                        "tblname",
+                                        "rootpage",
+                                        "sql"
+                                    ])
+
         self.PageType = self.BTreePageType(0x02,0x05,0x0A,0xD)
 
         self.db_file.seek(16)
         self.page_size = int.from_bytes(self.db_file.read(2), byteorder="big")
         self.db_file.seek(0)
 
-        self.command_mapper = {".dbinfo":self.run_dbinfo, ".tables":self.run_tables}
+        self.command_mapper = {".dbinfo":self.run_dbinfo, ".tables":self.run_dottables, "select": self.run_select}
 
     def run(self,command):
         # self.db_file.seek(16)
@@ -48,6 +59,26 @@ class Sqlite:
         self.command_mapper[command].__call__()
 
     
+    def run_select(self):
+
+        try:
+            table_records = self.run_query_master()
+            
+            for table_record in table_records:
+                if table_record.tblname == self.table:
+                    root_page = table_record.rootpage
+                    
+                    offset = (root_page - 1) * self.page_size
+                    
+                    page = self.db_file.read(offset)
+                    b_tree_header = self.parse_btree_header(page, root_page == 1)
+                    print(b_tree_header.cell_count)
+
+        except:
+            print(f"No table named:{self.table}")
+            return 
+
+
     def run_dbinfo(self):
         page = self.db_file.read(self.page_size)
         
@@ -56,7 +87,12 @@ class Sqlite:
         print(f"database page size: {self.page_size}")
         print(f"number of tables: {b_tree_header.cell_count}")
 
-    def run_tables(self):
+    def run_dottables(self):
+        cells = self.run_query_master()
+
+        print(" ".join(cell[3] for cell in cells if cell[1] =="table" and not cell[3].startswith("sqlite_")))
+
+    def run_query_master(self):
         
         #get the encoding types
         self.db_file.seek(56)
@@ -86,12 +122,12 @@ class Sqlite:
 
             column_values, bytes_read = self.parse_record(page,cell_content_offset, text_encoding)
 
-            column_values.insert(0,row_id)
+            MasterTableValues = self.MasterTableColumn(row_id,*column_values)
 
-            cells.append(column_values)
+            cells.append(MasterTableValues)
 
 
-        print(" ".join(cell[3] for cell in cells if cell[1] =="table" and not cell[3].startswith("sqlite_")))
+        return cells
 
         
     def parse_btree_header(self,page,is_firstpage = False):
